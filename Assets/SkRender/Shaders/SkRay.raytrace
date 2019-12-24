@@ -1,0 +1,77 @@
+﻿#pragma max_recursion_depth 4
+#define MAX_LOOP 4
+
+#include "RayCommon.hlsl"
+#include "PRNG.hlsl"
+
+RWTexture2D<float4> _RT;
+RWStructuredBuffer<uint4> _PRNGStates;
+
+[shader("raygeneration")]
+void SkRayGenShader()
+{
+    uint2 dispatchIdx = DispatchRaysIndex().xy;
+	  float2 inUV=(float2(dispatchIdx)+0.5)/float2(DispatchRaysDimensions().xy);
+    float2 d= inUV*2.0-1.0;
+    
+    float4 origin=mul(_InvView,float4(0.0,0.0,0.0,1.0));
+    float4 target=mul(_InvProj,float4(d.x,d.y,1.0,1.0));
+    float4 direction=mul(_InvView,float4(normalize(target.xyz),0.0));
+    uint rayFlags=RAY_FLAG_NONE;
+    uint cullMask=0xff;
+
+    RayDesc ray;
+    ray.TMin = 1e-5f;
+    ray.TMax = _FarClip;
+    
+    float3 record[MAX_LOOP];
+    for (int i = 0; i < MAX_LOOP; i++) {
+      record[i] = 0.0;
+    }   
+    RP rp;
+    rp.kS=1.0;
+    rp.pos=origin.xyz;
+    rp.dir=direction.xyz;
+    rp.color=0.0;
+    
+    int totalIndex=DispatchRaysDimensions().x*DispatchRaysDimensions().y;
+    int rdIdx=dispatchIdx.y*DispatchRaysDimensions().x+dispatchIdx.x;
+    rp.states=_PRNGStates[rdIdx];
+
+    float3 result=0.0;
+    for(int i=0;i<MAX_LOOP;i++)
+    {
+        float3 kS=rp.kS;
+        ray.Origin=rp.pos;
+        ray.Direction=rp.dir;
+        TraceRay(_RTAS,rayFlags,cullMask,0,1,0,ray,rp);
+        if(rp.kS.x<0)
+        {
+          result+=rp.color;
+          break;
+        }
+        record[i]=rp.color;
+        result+=record[i]*kS;
+    }
+    _PRNGStates[rdIdx]=rp.states;
+    if(_FrameIndex>0)
+    {
+        float a = 1.0f / (float)_FrameIndex;
+        result=a*result+(1.0-a)*_RT[dispatchIdx].xyz;
+    }
+    // _RT[dispatchIdx] = float4(inUV,0.0,1.0);
+    _RT[dispatchIdx] =float4(result,1.0);
+}
+
+[shader("miss")]
+void MissShader(inout RP rp : SV_RayPayload)
+{
+  rp.color = float3(0.0f, 0.0f, 0.0f);
+  rp.kS=-1.0;
+}
+
+[shader("miss")]
+void ShadowMissShader(inout ShadowRP rp : SV_RayPayload)
+{
+    rp.shadowed=false;
+}
