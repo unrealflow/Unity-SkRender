@@ -62,7 +62,7 @@
             {
                 // sample the texture
                 GBuffer g;
-                g.albedo = tex2D(_MainTex, i.uv);
+                g.albedo = float4(tex2D(_MainTex, i.uv).xyz,1.0);
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, g.albedo);
                 g.normal=float4(i.normal,0.0);

@@ -135,9 +135,9 @@ namespace UnityTemplateProjects
             {
                 
                 var mouseMovement = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y") * (invertY ? 1 : -1));
+                SkRender.SK.FrameIndex = 1;
                 if(mouseMovement.x!=0||mouseMovement.y!=0)
                 {
-                    SkRender.SK.FrameIndex = 1;
                     var mouseSensitivityFactor = mouseSensitivityCurve.Evaluate(mouseMovement.magnitude);
 
                     m_TargetCameraState.yaw += mouseMovement.x * mouseSensitivityFactor;

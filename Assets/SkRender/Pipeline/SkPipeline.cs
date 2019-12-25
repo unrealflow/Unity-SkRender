@@ -8,6 +8,7 @@ public class SkPipeline : RenderPipeline
     private SkPipelineAsset _asset;
     private SkRayTracing rayTracing;
     private SkGBuffer gBuffer;
+    private SkDenoise denoise;
 
     private readonly bool enableRayTracing = false;
 
@@ -33,6 +34,7 @@ public class SkPipeline : RenderPipeline
         this._asset = asset;
         rayTracing = new SkRayTracing(asset);
         gBuffer = new SkGBuffer(asset);
+        denoise = new SkDenoise(asset,gBuffer,rayTracing);
     }
 
     protected override void Render(ScriptableRenderContext context, Camera[] cameras)
@@ -59,8 +61,9 @@ public class SkPipeline : RenderPipeline
                 var lights = cullRes.visibleLights;
                 ConfigureLights(ref lights);
                 SetupCameraBuffer(camera);
-                //gBuffer.Render(context, camera, true);
-                rayTracing.Render(context, camera, true);
+                gBuffer.Render(context, camera, false);
+                rayTracing.Render(context, camera, false);
+                denoise.Render(context, camera, true);
             }
             EndCameraRendering(context, camera);
             context.Submit();
@@ -107,7 +110,7 @@ public class SkPipeline : RenderPipeline
 
     private void SetupCameraBuffer(Camera camera)
     {
-        preProj = projMatrix;
+        preProj = jitterProj;
         preView = viewMatrix;
 
         projMatrix = GL.GetGPUProjectionMatrix(camera.projectionMatrix, false);
@@ -130,11 +133,15 @@ public class SkPipeline : RenderPipeline
 
         Shader.SetGlobalVectorArray(UniformParams._LightColors, lightColors);
         Shader.SetGlobalVectorArray(UniformParams._LightPositions, lightPositions);
+        Shader.SetGlobalVector(UniformParams._RTSize,
+                                new Vector4( 
+                                camera.pixelWidth, camera.pixelHeight,SK.Jitter.x, SK.Jitter.y));
     }
 
     protected override void Dispose(bool disposing)
     {
         rayTracing.CleanUp();
+        gBuffer.CleanUp();
         base.Dispose(disposing);
     }
 }

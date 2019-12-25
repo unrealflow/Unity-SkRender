@@ -17,4 +17,7 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  shader: {fileID: 4807578003741378534, guid: 427180d95e06539438b307e0bc43e0ae, type: 3}
+  _RayTracingShader: {fileID: 4807578003741378534, guid: 427180d95e06539438b307e0bc43e0ae,
+    type: 3}
+  _GBufferShader: {fileID: 4800000, guid: e8034615588f35e4db3a675e1334ca8b, type: 3}
+  _DenoiseShader: {fileID: 7200000, guid: 6ee21dde2908859408c65150bd204d93, type: 3}

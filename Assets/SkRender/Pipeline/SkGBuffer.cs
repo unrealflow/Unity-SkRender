@@ -7,38 +7,38 @@ namespace SkRender
 {
     public class SkGBuffer
     {
-        private class GBuffer
+        public class GBuffer
         {
-            public RTHandle position { get { return this.L?[0]; } }
-            public RTHandle normal { get { return this.L?[1]; } }
-            public RTHandle albode { get { return this.L?[2]; } }
+            public RTHandle position { get { return this.colors?[0]; } }
+            public RTHandle normal { get { return this.colors?[1]; } }
+            public RTHandle albode { get { return this.colors?[2]; } }
 
             public RTHandle depth;
-            public RTHandle[] L;
+            public RTHandle[] colors;
 
             public RenderTargetIdentifier[] GetID()
             {
-                return new RenderTargetIdentifier[] { L[0],L[1],L[2] };
+                return new RenderTargetIdentifier[] { colors[0], colors[1], colors[2] };
             }
             public GBuffer(Camera camera)
             {
-                L = new RTHandle[3];
+                colors = new RTHandle[3];
                 #region Alloc_RT
-                L[0] = RTHandles.Alloc(camera.pixelWidth, camera.pixelHeight,
-                                        1, DepthBits.None, GraphicsFormat.R32G32B32A32_SFloat,
-                                         FilterMode.Point, TextureWrapMode.Clamp, TextureDimension.Tex2D,
-                                        true, false, false, false, 1, 0f,
-                                        MSAASamples.None, false, false,
-                                        RenderTextureMemoryless.None,
-                                        $"Position_{camera.name}");
-                L[1] = RTHandles.Alloc(camera.pixelWidth, camera.pixelHeight,
-                                        1, DepthBits.None, GraphicsFormat.R32G32B32A32_SFloat,
-                                         FilterMode.Point, TextureWrapMode.Clamp, TextureDimension.Tex2D,
-                                        true, false, false, false, 1, 0f,
-                                        MSAASamples.None, false, false,
-                                        RenderTextureMemoryless.None,
-                                        $"Normal_{camera.name}");
-                L[2] = RTHandles.Alloc(camera.pixelWidth, camera.pixelHeight,
+                colors[0] = RTHandles.Alloc(camera.pixelWidth, camera.pixelHeight,
+                                       1, DepthBits.None, GraphicsFormat.R32G32B32A32_SFloat,
+                                        FilterMode.Point, TextureWrapMode.Clamp, TextureDimension.Tex2D,
+                                       true, false, false, false, 1, 0f,
+                                       MSAASamples.None, false, false,
+                                       RenderTextureMemoryless.None,
+                                       $"Position_{camera.name}");
+                colors[1] = RTHandles.Alloc(camera.pixelWidth, camera.pixelHeight,
+                                       1, DepthBits.None, GraphicsFormat.R32G32B32A32_SFloat,
+                                        FilterMode.Point, TextureWrapMode.Clamp, TextureDimension.Tex2D,
+                                       true, false, false, false, 1, 0f,
+                                       MSAASamples.None, false, false,
+                                       RenderTextureMemoryless.None,
+                                       $"Normal_{camera.name}");
+                colors[2] = RTHandles.Alloc(camera.pixelWidth, camera.pixelHeight,
                                         1, DepthBits.None, GraphicsFormat.R32G32B32A32_SFloat,
                                          FilterMode.Point, TextureWrapMode.Clamp, TextureDimension.Tex2D,
                                         true, false, false, false, 1, 0f,
@@ -55,44 +55,64 @@ namespace SkRender
                                         $"Depth_{camera.name}");
                 #endregion
             }
+            public void Release()
+            {
+                position.Release();
+                normal.Release();
+                albode.Release();
+                depth?.Release();
+            }
         };
         SkPipelineAsset _asset;
         ScriptableCullingParameters cullParam;
         CullingResults cullRes;
-        private readonly Dictionary<int, GBuffer> gbuffers = new Dictionary<int, GBuffer>();
+        Shader _shader;
+        Material material;
+        private  Dictionary<int, GBuffer> _GBuffers = new Dictionary<int, GBuffer>();
+        private  Dictionary<int, GBuffer> _PreGBuffers = new Dictionary<int, GBuffer>();
 
         public SkGBuffer(SkPipelineAsset asset)
         {
             _asset = asset;
+            if(asset._GBufferShader==null)
+            {
+                _shader= Shader.Find("SkRender/GBuffer");
+            }
+            else
+            {
+                _shader = asset._GBufferShader;
+            }
+            material = new Material(_shader)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
         }
 
         public void Render(ScriptableRenderContext context, Camera camera,bool isShow=false)
         {
+           
             if (!camera.TryGetCullingParameters(out this.cullParam))
             {
                 return;
             }
+            SwapRT();
             context.SetupCameraProperties(camera);
-            var rtId = GetRT(camera);
-            var depth = GetDepthTex(camera);
+            var rt = GetRT(camera);
             var cmd= CommandBufferPool.Get($"CMD_GBuffer: {camera.name}");
             try
             {
                 var flags = camera.clearFlags;
-                if (isShow)
-                {
-                    cmd.Blit(rtId[1], BuiltinRenderTextureType.CameraTarget, Vector2.one, Vector2.zero);
-                }
-                cmd.SetRenderTarget(rtId, depth);
+
+                cmd.SetRenderTarget(rt.GetID(), rt.depth);
                 cmd.ClearRenderTarget(true,true,Color.black);
-                Shader errorShader = Shader.Find("SkRender/GBuffer");
-                var errorMaterial = new Material(errorShader)
-                {
-                    hideFlags = HideFlags.HideAndDontSave
-                };
+                
                 foreach (var r in _asset.Renderers)
                 {
-                    cmd.DrawRenderer(r, errorMaterial);
+                    cmd.DrawRenderer(r, material);
+                }
+                if (isShow)
+                {
+                    cmd.Blit(rt.position, BuiltinRenderTextureType.CameraTarget, Vector2.one, Vector2.zero);
                 }
                 context.ExecuteCommandBuffer(cmd);
             }
@@ -104,30 +124,40 @@ namespace SkRender
 
         public void CleanUp()
         {
-            
+            foreach (var g in _GBuffers)
+            {
+                g.Value.Release();
+            }
         }
 
-        private RenderTargetIdentifier[] GetRT(Camera camera)
+        public GBuffer GetRT(Camera camera)
         {
             var id = camera.GetInstanceID();
-            if(gbuffers.TryGetValue(id,out var g))
+            if(_GBuffers.TryGetValue(id,out var g))
             {
-                return g.GetID();
+                return g;
             }
             g = new GBuffer(camera);
-            gbuffers.Add(id, g);
-            return g.GetID();
+            _GBuffers.Add(id, g);
+            return g;
         }
-        private RTHandle GetDepthTex(Camera camera)
+        public GBuffer GetPreRT(Camera camera)
         {
             var id = camera.GetInstanceID();
-            if (gbuffers.TryGetValue(id, out var g))
+            if (_PreGBuffers.TryGetValue(id, out var g))
             {
-                return g.depth;
+                return g;
             }
             g = new GBuffer(camera);
-            gbuffers.Add(id, g);
-            return g.depth;
+            _PreGBuffers.Add(id, g);
+            return g;
         }
+        void SwapRT()
+        {
+            var temp = _PreGBuffers;
+            _PreGBuffers = _GBuffers;
+            _GBuffers = temp;
+        }
+
     }
 }

@@ -19,7 +19,11 @@ namespace SkRender
         public SkRayTracing(SkPipelineAsset asset)
         {
             _asset = asset;
-            _shader = _asset.shader;
+            _shader = _asset._RayTracingShader;
+            if (_shader == null)
+            {
+                Debug.LogError("No RayTracingShader!");
+            }
             BuildRTAS();
         }
 

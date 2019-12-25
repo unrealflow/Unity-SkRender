@@ -11,7 +11,7 @@ RWStructuredBuffer<uint4> _PRNGStates;
 void SkRayGenShader()
 {
     uint2 dispatchIdx = DispatchRaysIndex().xy;
-	  float2 inUV=(float2(dispatchIdx)+0.5)/float2(DispatchRaysDimensions().xy);
+	  float2 inUV=(float2(dispatchIdx)+0.5)/float2(_RTSize.xy);
     float2 d= inUV*2.0-1.0;
     
     float4 origin=mul(_InvView,float4(0.0,0.0,0.0,1.0));
@@ -34,8 +34,8 @@ void SkRayGenShader()
     rp.dir=direction.xyz;
     rp.color=0.0;
     
-    int totalIndex=DispatchRaysDimensions().x*DispatchRaysDimensions().y;
-    int rdIdx=dispatchIdx.y*DispatchRaysDimensions().x+dispatchIdx.x;
+    int totalIndex=_RTSize.x*_RTSize.y;
+    int rdIdx=dispatchIdx.y*_RTSize.x+dispatchIdx.x;
     rp.states=_PRNGStates[rdIdx];
 
     float3 result=0.0;
@@ -54,11 +54,6 @@ void SkRayGenShader()
         result+=record[i]*kS;
     }
     _PRNGStates[rdIdx]=rp.states;
-    if(_FrameIndex>0)
-    {
-        float a = 1.0f / (float)_FrameIndex;
-        result=a*result+(1.0-a)*_RT[dispatchIdx].xyz;
-    }
     // _RT[dispatchIdx] = float4(inUV,0.0,1.0);
     _RT[dispatchIdx] =float4(result,1.0);
 }

@@ -8,7 +8,9 @@ using UnityEngine.Rendering;
 public class SkPipelineAsset : RenderPipelineAsset
 {
     public List<Renderer> Renderers;
-    public RayTracingShader shader;
+    public RayTracingShader _RayTracingShader;
+    public Shader _GBufferShader;
+    public ComputeShader _DenoiseShader;
     private void FindRenderers()
     {
         Renderers = new List<Renderer>();

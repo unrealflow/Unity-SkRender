@@ -14,6 +14,7 @@ cbuffer CameraBuffer {
 	float		_FarClip;
 	float4 _LightColors[MAX_LIGHTS];
 	float4 _LightPositions[MAX_LIGHTS];
+	float4 _RTSize;
 }
 cbuffer WorldBuffer
 {
