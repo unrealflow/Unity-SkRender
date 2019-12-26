@@ -67,9 +67,9 @@ namespace SkRender
         ScriptableCullingParameters cullParam;
         CullingResults cullRes;
         Shader _shader;
-        Material material;
         private  Dictionary<int, GBuffer> _GBuffers = new Dictionary<int, GBuffer>();
         private  Dictionary<int, GBuffer> _PreGBuffers = new Dictionary<int, GBuffer>();
+        private  Dictionary<int, Material> _Materials = new Dictionary<int, Material>();
 
         public SkGBuffer(SkPipelineAsset asset)
         {
@@ -82,10 +82,6 @@ namespace SkRender
             {
                 _shader = asset._GBufferShader;
             }
-            material = new Material(_shader)
-            {
-                hideFlags = HideFlags.HideAndDontSave
-            };
         }
 
         public void Render(ScriptableRenderContext context, Camera camera,bool isShow=false)
@@ -99,20 +95,20 @@ namespace SkRender
             context.SetupCameraProperties(camera);
             var rt = GetRT(camera);
             var cmd= CommandBufferPool.Get($"CMD_GBuffer: {camera.name}");
+            
             try
             {
                 var flags = camera.clearFlags;
-
                 cmd.SetRenderTarget(rt.GetID(), rt.depth);
                 cmd.ClearRenderTarget(true,true,Color.black);
-                
                 foreach (var r in _asset.Renderers)
                 {
-                    cmd.DrawRenderer(r, material);
+                    var m = GetMat(r.material);
+                    cmd.DrawRenderer(r,m);
                 }
                 if (isShow)
                 {
-                    cmd.Blit(rt.position, BuiltinRenderTextureType.CameraTarget, Vector2.one, Vector2.zero);
+                    cmd.Blit(rt.albode, BuiltinRenderTextureType.CameraTarget, Vector2.one, Vector2.zero);
                 }
                 context.ExecuteCommandBuffer(cmd);
             }
@@ -158,6 +154,23 @@ namespace SkRender
             _PreGBuffers = _GBuffers;
             _GBuffers = temp;
         }
+        private Material GetMat(Material source)
+        {
+            var id = source.GetInstanceID();
+            if(_Materials.TryGetValue(id,out var m))
+            {
+                return m;
+            }
+            m = new Material(_shader)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            m.SetColor(UniformParams._BaseColor,source.GetColor(UniformParams._BaseColor));
+            m.SetTexture(UniformParams._BaseColorMap,source.GetTexture(UniformParams._BaseColorMap));
 
+            _Materials.Add(id, m);
+            return m;
+        
+        }
     }
 }

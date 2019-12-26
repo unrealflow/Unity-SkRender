@@ -15,6 +15,11 @@ public class CreatePipeline : MonoBehaviour
     void Start()
     {
         _oldPipelineAsset = GraphicsSettings.renderPipelineAsset;
+        if (!SystemInfo.supportsRayTracing)
+        {
+            Debug.LogError("You system is not support ray tracing. Please check your graphic API is D3D12 and os is Windows 10.");
+            return;
+        }
         GraphicsSettings.renderPipelineAsset = newPipelineAsset;
     }
     public void OnDestroy()

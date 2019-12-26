@@ -13,7 +13,7 @@
         _BaseColorMap("BaseColorMap", 2D) = "white" {}
         [HideInInspector] _BaseColorMap_MipInfo("_BaseColorMap_MipInfo", Vector) = (0, 0, 0, 0)
 
-        _Metallic("_Metallic", Range(0.0, 1.0)) = 0
+        _Metallic("_Metallic", Range(0.0, 1.0)) = 0.5
         _Smoothness("Smoothness", Range(0.0, 1.0)) = 0.5
         _MaskMap("MaskMap", 2D) = "white" {}
         _SmoothnessRemapMin("SmoothnessRemapMin", Float) = 0.0
@@ -852,9 +852,7 @@
                 float3 tN=noise_normal(N,noise,GetRandomValue(rp.states),m.roughness);
                 rp.dir=reflect(-V,tN);
                 rp.dir*=sign(dot(rp.dir,N));
-                rp.color=color+_EmissionColor*_EmissiveIntensity;
-
-
+                rp.color=color;
             }
             ENDHLSL
         }

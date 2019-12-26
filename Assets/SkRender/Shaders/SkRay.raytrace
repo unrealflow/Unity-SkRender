@@ -56,12 +56,17 @@ void SkRayGenShader()
     _PRNGStates[rdIdx]=rp.states;
     // _RT[dispatchIdx] = float4(inUV,0.0,1.0);
     _RT[dispatchIdx] =float4(result,1.0);
+    // _RT[dispatchIdx]=_Albedo.SampleLevel(s_linear_clamp_sampler,inUV,0.0);
 }
 
 [shader("miss")]
 void MissShader(inout RP rp : SV_RayPayload)
 {
-  rp.color = float3(0.0f, 0.0f, 0.0f);
+  const float3 WorldUp=float3(0.0,1.0,0.0);
+
+  float f=dot(WorldRayDirection(),WorldUp);
+  f=smoothstep(1.0,0.0,f)*smoothstep(0.0,0.1,f);
+  rp.color= 0.1*f*_BackgroundColor.xyz;
   rp.kS=-1.0;
 }
 

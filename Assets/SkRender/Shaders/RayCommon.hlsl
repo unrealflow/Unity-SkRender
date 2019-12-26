@@ -3,6 +3,7 @@
 
 #include "Common.hlsl"
 #include "UnityRaytracingMeshUtils.cginc"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
 struct RP
 {

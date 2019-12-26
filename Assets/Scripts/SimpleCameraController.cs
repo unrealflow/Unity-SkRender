@@ -135,7 +135,7 @@ namespace UnityTemplateProjects
             {
                 
                 var mouseMovement = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y") * (invertY ? 1 : -1));
-                SkRender.SK.FrameIndex = 1;
+                SkRender.SK.FrameIndex = 0;
                 if(mouseMovement.x!=0||mouseMovement.y!=0)
                 {
                     var mouseSensitivityFactor = mouseSensitivityCurve.Evaluate(mouseMovement.magnitude);
@@ -150,7 +150,7 @@ namespace UnityTemplateProjects
 
             if (translation.x != 0 || translation.y != 0 || translation.z != 0)
             {
-                SkRender.SK.FrameIndex = 1;
+                SkRender.SK.FrameIndex = 0;
 
                 // Speed up movement when shift key held
                 if (Input.GetKey(KeyCode.LeftShift))

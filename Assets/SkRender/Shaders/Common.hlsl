@@ -15,6 +15,7 @@ cbuffer CameraBuffer {
 	float4 _LightColors[MAX_LIGHTS];
 	float4 _LightPositions[MAX_LIGHTS];
 	float4 _RTSize;
+	float4 _BackgroundColor;
 }
 cbuffer WorldBuffer
 {
@@ -32,7 +33,7 @@ Light GetLight(int index,float3 pos,float3 noise)
 {
 	Light l;
 	l.tag=1;
-	l.color=_LightColors[index].rgb/30000.0;
+	l.color=_LightColors[index].rgb/20000.0;
 	float4 lightPosition = _LightPositions[index];
 	if(lightPosition.w<0)
 	{
@@ -42,7 +43,7 @@ Light GetLight(int index,float3 pos,float3 noise)
 	{
 		float3 d=lightPosition.xyz-pos;
 		l.dir = normalize(d+_LightColors[index].w*noise);
-		l.color *= 1.3/(0.3+length(d));
+		l.color *= 1.3/(0.3+dot(d,d));
 	}
 	else{
 		l.dir=normalize(lightPosition.xyz);

@@ -16,6 +16,8 @@ namespace SkRender
         public static readonly int _InvProj = Shader.PropertyToID("_InvProj");
         public static readonly int _FarClip = Shader.PropertyToID("_FarClip");
         public static readonly int _RTSize = Shader.PropertyToID("_RTSize");
+        public static readonly int _BackgroundColor = Shader.PropertyToID("_BackgroundColor");
+
 
         //PerDraw
         public static readonly int _RTAS = Shader.PropertyToID("_RTAS");
@@ -24,7 +26,9 @@ namespace SkRender
         public static readonly int _LightColors = Shader.PropertyToID("_LightColors");
         public static readonly int _LightPositions = Shader.PropertyToID("_LightPositions");
         public static readonly int _PRNGStates = Shader.PropertyToID("_PRNGStates");
- 
+        public static readonly int _BaseColor = Shader.PropertyToID("_BaseColor");
+        public static readonly int _BaseColorMap = Shader.PropertyToID("_BaseColorMap");
+
 
         //Denoise
         public static readonly int _Position = Shader.PropertyToID("_Position");

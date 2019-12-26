@@ -2,7 +2,8 @@
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        _BaseColor ("_BaseColor", Color) = (1,1,1,1)
+        _BaseColorMap ("_BaseColorMap (RGB)", 2D) = "white" {}
     }
     SubShader
     {
@@ -41,19 +42,23 @@
                 float4 normal : SV_TARGET1;
                 float4 albedo : SV_TARGET2;
             };
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
+            float4 _BaseColor;
+            sampler2D _BaseColorMap;
+            float4 _BaseColorMap_ST;
 
             v2f vert (appdata v)
             {
                 v2f o;
                 o.w_pos=mul(unity_ObjectToWorld,float4(v.vertex.xyz,1.0));
-                o.vertex =mul(_JitterProj,mul(_View,float4(o.w_pos,1.0)));
+                o.vertex=mul(_View,float4(o.w_pos,1.0));
+
+                o.vertex =mul(_JitterProj,o.vertex);
+                
                 o.vertex.y=-o.vertex.y;
                 // o.vertex =mul(UNITY_MATRIX_VP,float4(o.w_pos,1.0));
                 // o.vertex=UnityWorldToClipPos(o.w_pos);
                 o.normal=UnityObjectToWorldNormal(v.normal);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                o.uv = TRANSFORM_TEX(v.uv, _BaseColorMap);
                 UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
@@ -62,7 +67,7 @@
             {
                 // sample the texture
                 GBuffer g;
-                g.albedo = float4(tex2D(_MainTex, i.uv).xyz,1.0);
+                g.albedo = _BaseColor*float4(tex2D(_BaseColorMap, i.uv).xyz,1.0);
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, g.albedo);
                 g.normal=float4(i.normal,0.0);
